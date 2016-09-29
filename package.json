@@ -1,0 +1,33 @@
+{
+  "name": "uts",
+  "version": "1.0.0",
+  "description": "Microscopic time series database for Node and the browser",
+  "main": "uts.js",
+  "typings": "uts",
+  "scripts": {
+    "test": "tsc && mocha",
+    "prepublish": "tsc && tsc -d && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WatchBeam/uts.git"
+  },
+  "keywords": [
+    "time",
+    "series",
+    "database",
+    "browser"
+  ],
+  "author": "Connor Peet <connor@peet.io>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/WatchBeam/uts/issues"
+  },
+  "homepage": "https://github.com/WatchBeam/uts#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.1.0",
+    "typescript": "^2.0.3",
+    "sinon": "^1.17.6"
+  }
+}
