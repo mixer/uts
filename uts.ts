@@ -96,7 +96,7 @@ class IntervalGrouper extends Group {
      * @param  {Number} interval the size, in milliseconds, of each group bin
      * @param  {Boolean} fill    whether to zero-fill bins that don't have data
      */
-    constructor(private interval: number, private fill: boolean) {
+    constructor(private interval: number, private fill: boolean, private now: number) {
         super();
     }
 
@@ -108,8 +108,7 @@ class IntervalGrouper extends Group {
             start = data[0].getTime();
         }
 
-        const now = Date.now();
-        const interval = this.interval;
+        const { interval, now } = this;
         const count = Math.floor((now - start) / interval) + 1;
 
         let bins = new Array<Bin>();
@@ -121,7 +120,12 @@ class IntervalGrouper extends Group {
         }
 
         for (let i = 0; i < data.length; i++) {
-            bins[Math.floor((now - data[i].getTime()) / interval)].push(data[i]);
+            const time = data[i].getTime();
+            if (time > now) {
+                break;
+            }
+
+            bins[Math.floor((now - time) / interval)].push(data[i]);
         }
 
         if (!this.fill) {
@@ -240,7 +244,7 @@ export class Series {
             return;
         }
 
-        this.interval = setInterval(() => {
+        this.interval = <any> setInterval(() => {
             const threshold = Date.now() - ttl;
 
             let i = 0;
@@ -418,6 +422,44 @@ class Last implements Aggregate {
     }
 }
 
+class Max implements Aggregate {
+
+    private max: number;
+
+    /**
+     * Last returns the most recently recorded value for the column.
+     */
+    constructor(private column: string) {}
+
+    public push(pt: Point) {
+        const value = pt.get(this.column);
+        this.max = this.max === undefined ? value : Math.max(this.max, value);
+    }
+
+    public serialize() {
+        return this.max;
+    }
+}
+
+class Min implements Aggregate {
+
+    private min: number;
+
+    /**
+     * Last returns the most recently recorded value for the column.
+     */
+    constructor(private column: string) {}
+
+    public push(pt: Point) {
+        const value = pt.get(this.column);
+        this.min = this.min === undefined ? value : Math.min(this.min, value);
+    }
+
+    public serialize() {
+        return this.min;
+    }
+}
+
 class Derivative implements Aggregate {
 
     private lastChange: number = 0;
@@ -522,7 +564,7 @@ export class TSDB {
      * returning the mapping results. If the `mapper` is a string, it'll
      * extract the specified column from the results, lodash style.
      */
-    public map(mapper: string | ((pt: Point) => any)): () => Aggregate {
+    public static map(mapper: string | ((pt: Point) => any)): () => Aggregate {
         let fn: (pt: Point) => any;
         if (typeof mapper === 'function') {
             fn = mapper;
@@ -536,15 +578,29 @@ export class TSDB {
     /**
      * Creates a mean metric analysis passed into Series.Query
      */
-    public mean(column: string): () => Aggregate {
+    public static mean(column: string): () => Aggregate {
         return () => new Average(column);
+    }
+
+    /**
+     * Creates a max metric analysis passed into Series.Query
+     */
+    public static max(column: string): () => Aggregate {
+        return () => new Max(column);
+    }
+
+    /**
+     * Creates a min metric analysis passed into Series.Query
+     */
+    public static min(column: string): () => Aggregate {
+        return () => new Min(column);
     }
 
     /**
      * Creates an analysis which returns points that plot changes in a column,
      * within a specified interval.
      */
-    public derivative(column: string, interval: number): () => Aggregate {
+    public static derivative(column: string, interval: number): () => Aggregate {
         return () => new Derivative(column, interval);
     }
 
@@ -552,14 +608,14 @@ export class TSDB {
      * Creates an analysis that gets the most recent
      * value of the specified column.
      */
-    public last(column: string): () => Aggregate {
+    public static last(column: string): () => Aggregate {
         return () => new Last(column);
     }
 
     /**
      * Creates a new grouper based on time intervals.
      */
-    public interval(interval: number, fill: boolean = true): Group {
-        return new IntervalGrouper(interval, fill);
+    public static interval(interval: number, fill: boolean = true, now: number = Date.now()): Group {
+        return new IntervalGrouper(interval, fill, now);
     }
 }

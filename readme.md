@@ -14,6 +14,8 @@ This is an evolving project. Reading the source and the [tests](./test.js) are t
 
 μts is schemaless, data is arranged in points, which contain one more columns, within series. Aggregations can be run which operate on points or columns. Currently supported aggregations are:
 
+ -  `db.max(column: string)` extracts the maximum value for the column
+ -  `db.minimum(column: string)` extracts the minimum value for the column
  -  `db.mean(column: string)` calculates the mean for the column
  -  `db.top(column: string)` returns the most recent value in the column
  -  `db.derivative(column: string)` calculates the change in a column
@@ -21,6 +23,10 @@ This is an evolving project. Reading the source and the [tests](./test.js) are t
  -  `db.map(iterator: (pt: Point) => any)` can extract any data you want from points in the series!
 
 ```js
+import { TSDB } from "uts";
+
+const db = new TSDB();
+
 db.series('bandwidth').query({
   metrics: {
     mean: db.mean('bits'),

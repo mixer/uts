@@ -34,7 +34,7 @@ describe('querying', () => {
   it('runs map() aggregations', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { data: tsdb.map('my_col1') }
+        metrics: { data: TSDB.map('my_col1') }
       })
     ).to.deep.equal([
       {
@@ -46,7 +46,7 @@ describe('querying', () => {
 
     expect(
       tsdb.series('a').query({
-        metrics: { data: tsdb.map(pt => pt.get('my_col2')) }
+        metrics: { data: TSDB.map(pt => pt.get('my_col2')) }
       })
     ).to.deep.equal([
       {
@@ -60,7 +60,7 @@ describe('querying', () => {
   it('runs mean() aggregations', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { mean: tsdb.mean('my_col1') }
+        metrics: { mean: TSDB.mean('my_col1') }
       })
     ).to.deep.equal([
       {
@@ -69,10 +69,34 @@ describe('querying', () => {
     ])
   })
 
+  it('runs max() aggregations', () => {
+    expect(
+      tsdb.series('a').query({
+        metrics: { max: TSDB.max('my_col1') }
+      })
+    ).to.deep.equal([
+      {
+        results: { max: 4 }
+      }
+    ])
+  })
+
+  it('runs min() aggregations', () => {
+    expect(
+      tsdb.series('a').query({
+        metrics: { min: TSDB.min('my_col1') }
+      })
+    ).to.deep.equal([
+      {
+        results: { min: 0 }
+      }
+    ])
+  })
+
   it('runs derivative() aggregations #1', () => {
     expect(
       tsdb.series('b').query({
-        metrics: { der: tsdb.derivative('my_col1', 100) }
+        metrics: { der: TSDB.derivative('my_col1', 100) }
       })[0].results.der.map(pt => pt.toObject())
     ).to.deep.equal([
       { time: now - 300, my_col1: 1 },
@@ -85,7 +109,7 @@ describe('querying', () => {
   it('runs derivative() aggregations #2', () => {
     expect(
       tsdb.series('b').query({
-        metrics: { der: tsdb.derivative('my_col1', 200) }
+        metrics: { der: TSDB.derivative('my_col1', 200) }
       })[0].results.der.map(pt => pt.toObject())
     ).to.deep.equal([
       { time: now - 200, my_col1: 4 },
@@ -96,7 +120,7 @@ describe('querying', () => {
   it('runs derivative() aggregations #4', () => {
     expect(
       tsdb.series('b').query({
-        metrics: { der: tsdb.derivative('my_col1', 500) }
+        metrics: { der: TSDB.derivative('my_col1', 500) }
       })[0].results.der.map(pt => pt.toObject())
     ).to.deep.equal([
       { time: now, my_col1: 16 }
@@ -106,7 +130,7 @@ describe('querying', () => {
   it('runs derivative() aggregations #5', () => {
     expect(
       tsdb.series('q').query({
-        metrics: { der: tsdb.derivative('my_col1', 500) }
+        metrics: { der: TSDB.derivative('my_col1', 500) }
       })[0].results.der.map(pt => pt.toObject())
     ).to.deep.equal([])
   })
@@ -114,8 +138,8 @@ describe('querying', () => {
   it('runs last() aggregations', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { last: tsdb.last('my_col1') },
-        group: tsdb.interval(250, false)
+        metrics: { last: TSDB.last('my_col1') },
+        group: TSDB.interval(250, false)
       })
     ).to.deep.equal([
       {
@@ -132,8 +156,8 @@ describe('querying', () => {
   it('runs last() aggregations', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { last: tsdb.last('my_col1') },
-        group: tsdb.interval(250, false)
+        metrics: { last: TSDB.last('my_col1') },
+        group: TSDB.interval(250, false)
       })
     ).to.deep.equal([
       {
@@ -147,11 +171,29 @@ describe('querying', () => {
     ])
   })
 
+  it('time shifts the interval grouper', () => {
+    expect(
+      tsdb.series('a').query({
+        metrics: { data: TSDB.map('my_col1') },
+        group: TSDB.interval(250, false, now - 100)
+      })
+    ).to.deep.equal([
+      {
+        results: { data: [1, 2, 3] },
+        group: { start: now - 350, width: 250 }
+      },
+      {
+        results: { data: [0] },
+        group: { start: now - 600, width: 250 }
+      }
+    ])
+  })
+
   it('runs grouped() aggregations #1', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { data: tsdb.map('my_col1') },
-        group: tsdb.interval(250, false)
+        metrics: { data: TSDB.map('my_col1') },
+        group: TSDB.interval(250, false)
       })
     ).to.deep.equal([
       {
@@ -168,8 +210,8 @@ describe('querying', () => {
   it('runs grouped() aggregations #2', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { data: tsdb.map('my_col1') },
-        group: tsdb.interval(100, false),
+        metrics: { data: TSDB.map('my_col1') },
+        group: TSDB.interval(100, false),
         where: { time: { is: '>', than: now - 300 } }
       })
     ).to.deep.equal([
@@ -191,8 +233,8 @@ describe('querying', () => {
   it('runs grouped() aggregations #3', () => {
     expect(
       tsdb.series('a').query({
-        metrics: { data: tsdb.map('my_col1') },
-        group: tsdb.interval(100, false),
+        metrics: { data: TSDB.map('my_col1') },
+        group: TSDB.interval(100, false),
         where: { time: { is: '>', than: now } }
       })
     ).to.deep.equal([])
