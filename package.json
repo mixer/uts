@@ -1,6 +1,6 @@
 {
   "name": "uts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Microscopic time series database for Node and the browser",
   "main": "uts.js",
   "typings": "uts",
