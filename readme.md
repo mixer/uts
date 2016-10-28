@@ -21,6 +21,7 @@ This is an evolving project. Reading the source and the [tests](./test.js) are t
  -  `db.derivative(column: string)` calculates the change in a column
  -  `db.map(column: string)` extracts a list of column values from points in the series
  -  `db.map(iterator: (pt: Point) => any)` can extract any data you want from points in the series!
+ -  `db.reduce(iterator: (current: T, pt: Point) => T, initial: T)` can reduce a column to a single data point.
 
 ```js
 import { TSDB } from "uts";

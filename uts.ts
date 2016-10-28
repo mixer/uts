@@ -380,6 +380,26 @@ class Mapper implements Aggregate {
     }
 }
 
+class Reducer<T> implements Aggregate {
+
+    private result: T;
+
+    /**
+     * Mapper returns the results of a mapping function on the points.
+     */
+    constructor(private fn: (current: T, pt: Point) => T, initial: T) {
+        this.result = initial;
+    }
+
+    public push(pt: Point) {
+        this.result = this.fn(this.result, pt);
+    }
+
+    public serialize() {
+        return this.result;
+    }
+}
+
 class Average implements Aggregate {
 
     private sum = 0;
@@ -399,64 +419,6 @@ class Average implements Aggregate {
 
     public serialize() {
         return this.count === 0 ? 0 : this.sum / this.count;
-    }
-}
-
-class Last implements Aggregate {
-
-    private value: any;
-
-    /**
-     * Last returns the most recently recorded value for the column.
-     */
-    constructor(private column: string) {}
-
-    public push(pt: Point) {
-        if (pt.has(this.column)) {
-            this.value = pt.get(this.column);
-        }
-    }
-
-    public serialize() {
-        return this.value;
-    }
-}
-
-class Max implements Aggregate {
-
-    private max: number;
-
-    /**
-     * Last returns the most recently recorded value for the column.
-     */
-    constructor(private column: string) {}
-
-    public push(pt: Point) {
-        const value = pt.get(this.column);
-        this.max = this.max === undefined ? value : Math.max(this.max, value);
-    }
-
-    public serialize() {
-        return this.max;
-    }
-}
-
-class Min implements Aggregate {
-
-    private min: number;
-
-    /**
-     * Last returns the most recently recorded value for the column.
-     */
-    constructor(private column: string) {}
-
-    public push(pt: Point) {
-        const value = pt.get(this.column);
-        this.min = this.min === undefined ? value : Math.min(this.min, value);
-    }
-
-    public serialize() {
-        return this.min;
     }
 }
 
@@ -576,6 +538,15 @@ export class TSDB {
     }
 
     /**
+     * Creates an analysis which runs a custom mapping function on points,
+     * returning the mapping results. If the `mapper` is a string, it'll
+     * extract the specified column from the results, lodash style.
+     */
+    public static reduce<T>(fn: (current: T, pt: Point) => T, initial: T): () => Aggregate {
+        return () => new Reducer(fn, initial);
+    }
+
+    /**
      * Creates a mean metric analysis passed into Series.Query
      */
     public static mean(column: string): () => Aggregate {
@@ -586,14 +557,14 @@ export class TSDB {
      * Creates a max metric analysis passed into Series.Query
      */
     public static max(column: string): () => Aggregate {
-        return () => new Max(column);
+        return this.reduce((max, pt) => Math.max(pt.get(column), max), 0);
     }
 
     /**
      * Creates a min metric analysis passed into Series.Query
      */
     public static min(column: string): () => Aggregate {
-        return () => new Min(column);
+        return this.reduce((min, pt) => Math.min(pt.get(column), min), 0);
     }
 
     /**
@@ -609,7 +580,7 @@ export class TSDB {
      * value of the specified column.
      */
     public static last(column: string): () => Aggregate {
-        return () => new Last(column);
+        return this.reduce((x, pt) => pt.get(column), null);
     }
 
     /**

@@ -3,10 +3,11 @@
   "version": "1.0.1",
   "description": "Microscopic time series database for Node and the browser",
   "main": "uts.js",
-  "typings": "uts",
+  "typings": "uts.d.ts",
   "scripts": {
-    "test": "tsc && mocha",
-    "prepublish": "tsc && tsc -d && mocha"
+    "test": "npm run build && mocha",
+    "build": "tsc && tsc -d",
+    "prepublish": "npm run build"
   },
   "repository": {
     "type": "git",
