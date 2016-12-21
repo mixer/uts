@@ -345,7 +345,6 @@ export class Series {
      * usages of the series will throw an error.
      */
     public destroy() {
-        this.data = null;
         clearInterval(this.interval);
     }
 }
