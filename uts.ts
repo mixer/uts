@@ -70,7 +70,7 @@ export class Bin {
  */
 export abstract class Group {
 
-    protected _where: any;
+    protected _where: { [col: string]: Comparator | Comparator[] };
 
     /**
      * Sets the `where` object this query is being called with.
@@ -80,6 +80,15 @@ export abstract class Group {
     public where(where: any): this {
         this._where = where;
         return this;
+    }
+
+    protected getWhere(column: string): Comparator[] {
+        const clause = this._where[column];
+        if (!clause) {
+            return [];
+        }
+
+        return (Array.isArray(clause) ? clause : [clause]);
     }
 
     /**
@@ -102,8 +111,9 @@ class IntervalGrouper extends Group {
 
     binify(data: Point[], metrics: { [column: string]: () => Aggregate }): Bin[] {
         let start: number;
-        if (this._where.time && this._where.time.is === '>') {
-            start = this._where.time.than;
+        const timeBound = this.getWhere('time').find(time => time.is === '>');
+        if (timeBound) {
+            start = timeBound.than;
         } else {
             start = data[0].getTime();
         }
@@ -272,22 +282,31 @@ export class Series {
      * @param  {Object} cmp
      * @return {Function}
      */
-    private buildComparator(cmp: { [col: string]: Comparator }): (pt: Point) => boolean {
-        const fns = Object.keys(cmp).map(col => {
-            const comparator = cmp[col].is;
-            const value = cmp[col].than;
+    private buildComparator(cmp: { [col: string]: Comparator | Comparator[] }): (pt: Point) => boolean {
+        const fns = Object.keys(cmp).reduce((allFns, col) => {
+            let comparators = cmp[col];
+            if (!Array.isArray(cmp[col])) {
+                comparators = [<Comparator> comparators];
+            }
 
-            return (pt: Point): boolean => {
-                if (!pt.has(col)) return false;
+            const cmpFns = (<Comparator[]> comparators).map(comp => {
+                const comparator = comp.is;
+                const value = comp.than;
 
-                switch (comparator) {
-                case '>': return pt.get(col) > value;
-                case '<': return pt.get(col) < value;
-                case '=': return pt.get(col) === value;
-                default: throw new Error(`Unknown comparator '${comparator}'`);
-                }
-            };
-        });
+                return (pt: Point): boolean => {
+                    if (!pt.has(col)) return false;
+
+                    switch (comparator) {
+                    case '>': return pt.get(col) > value;
+                    case '<': return pt.get(col) < value;
+                    case '=': return pt.get(col) === value;
+                    default: throw new Error(`Unknown comparator '${comparator}'`);
+                    }
+                };
+            });
+
+            return [...allFns, ...cmpFns];
+        }, []);
 
         return (pt) => {
             for (let i = 0; i < fns.length; i++) {
@@ -327,7 +346,7 @@ export class Series {
      */
     public query(options: {
         metrics: { [col: string]: () => Aggregate },
-        where?: { [col: string]: Comparator },
+        where?: { [col: string]: Comparator | Comparator[] },
         group?: Group,
     }): BinResult[] {
         options.where = options.where || {};
@@ -580,6 +599,13 @@ export class TSDB {
      */
     public static last(column: string): () => Aggregate {
         return this.reduce((x, pt) => pt.get(column), null);
+    }
+
+    /**
+     * Creates a sum metric analysis passed into Series.Query
+     */
+    public static sum(column: string): () => Aggregate {
+        return this.reduce((sum, pt) => sum + pt.get(column), 0);
     }
 
     /**

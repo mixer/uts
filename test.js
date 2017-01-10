@@ -239,4 +239,39 @@ describe('querying', () => {
       })
     ).to.deep.equal([])
   })
+
+  it('respects single where clauses', () => {
+    expect(
+      tsdb.series('a').query({
+        metrics: { data: TSDB.map('my_col1') },
+        where: { time: { is: '>', than: now - 300 } }
+      })
+    ).to.deep.equal([
+      {
+        results: {
+          data: [2, 3, 4]
+        }
+      }
+    ])
+  })
+
+  it('respects multiple where clauses', () => {
+    expect(
+      tsdb.series('a').query({
+        metrics: { data: TSDB.map('my_col1') },
+        where: {
+          time: [
+            { is: '>', than: now - 300 },
+            { is: '<', than: now }
+          ]
+        },
+      })
+    ).to.deep.equal([
+      {
+        results: {
+          data: [2, 3]
+        }
+      }
+    ])
+  })
 })
