@@ -1,4 +1,4 @@
-# μts [![Build Status](https://travis-ci.org/WatchBeam/uts.svg?branch=master)](https://travis-ci.org/WatchBeam/uts)
+# μts [![Build Status](https://travis-ci.org/mixer/uts.svg?branch=master)](https://travis-ci.org/mixer/uts)
 
 μts is a miniature time-series database suitable for embedded or frontend web applications, weighing in at about 1.5 KB minified and gzipped.
 
