@@ -320,6 +320,21 @@ export class Series {
     }
 
     /**
+     * deleteBy removes series data that matches the comparison. If no
+     * comparator is given, then all data is removed.
+     */
+    public remove(query?: { [col: string]: Comparator | Comparator[] }): this {
+        if (!query) {
+            this.data = [];
+            return;
+        }
+
+        const comparator = this.buildComparator(query);
+        this.data = this.data.filter(pt => !comparator(pt));
+        return this;
+    }
+
+    /**
      * Runs a query against the time series.
      * @example
      *
@@ -606,6 +621,23 @@ export class TSDB {
      */
     public static sum(column: string): () => Aggregate {
         return this.reduce((sum, pt) => sum + pt.get(column), 0);
+    }
+
+    /**
+     * Creates a count analysis passed into Series.Query. By default, counts
+     * all columns, or you can pass a column to only count points that have
+     * that column.
+     */
+    public static count(column: string = '*'): () => Aggregate {
+        return this.reduce(
+            (sum, pt) => {
+                if (column === '*' || pt.get(column) !== undefined) {
+                    return sum + 1;
+                }
+                return sum;
+            },
+            0,
+        );
     }
 
     /**

@@ -264,12 +264,48 @@ describe('querying', () => {
             { is: '>', than: now - 300 },
             { is: '<', than: now }
           ]
-        },
+        }
       })
     ).to.deep.equal([
       {
         results: {
           data: [2, 3]
+        }
+      }
+    ])
+  })
+
+  it('drops all data', () => {
+    tsdb.series('a').remove()
+    expect(
+      tsdb.series('a').query({
+        metrics: { total: TSDB.count() }
+      })
+    ).to.deep.equal([
+      {
+        results: {
+          total: 0
+        }
+      }
+    ])
+  })
+
+  it('drops data matching a clause', () => {
+    tsdb.series('a').remove({
+      time: [
+        { is: '>', than: now - 300 },
+        { is: '<', than: now }
+      ]
+    })
+
+    expect(
+      tsdb.series('a').query({
+        metrics: { time: TSDB.map('time') }
+      })
+    ).to.deep.equal([
+      {
+        results: {
+          time: [600, 700, 1000]
         }
       }
     ])
